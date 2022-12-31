@@ -91,3 +91,16 @@ button:focus-visible {
 .App>div>.MuiGrid-root {
   justify-content: center;
 }
+
+.display-inline-block {
+  display: inline-block;
+}
+
+.text-align-center {
+  text-align: center;
+}
+
+.restrain-width {
+  width: 100vw;
+  overflow: scroll
+}

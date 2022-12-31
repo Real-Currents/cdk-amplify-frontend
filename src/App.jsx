@@ -18,6 +18,8 @@ import { FooWithoutBind } from './components/beginning-reactjs-foundations/Foo.c
 import UserProfileClass from './components/beginning-reactjs-foundations/UserProfile.class';
 import UserProfileCreateReactClass from './components/beginning-reactjs-foundations/UserProfile.create-react-class';
 
+import { getOutput } from "./modules/ShinyHelper.mjs";
+
 // import aws_config from "./aws-config";
 
 class Header extends Component {
@@ -62,6 +64,7 @@ function App ({ content }) {
     const [windowWidth, setWidth]   = useState(0);
     const [windowHeight, setHeight] = useState(0);
     const [windowRatio, setRatio] = useState(0);
+    const [selectedAlbumTitle, setSelectedAlbumTitle] = useState("");
 
     (function init () {
         // Check access to react/vite environment variables
@@ -106,6 +109,17 @@ function App ({ content }) {
                 });
             }, 53, app_container);
             content_loaded = true;
+
+            getOutput('album_title', (data) => {
+                console.log("Get input from shiny");
+                console.log('album_title')
+                console.log(data);
+                for (const n in data) {
+                    if (data.hasOwnProperty(n)) {
+                        setState(data[n]);
+                    }
+                }
+            });
         }
     }
 
