@@ -57,9 +57,9 @@ if (exists("args") && !is.null(args) && !is.na(args[1])) {
   } else if (!is.na(args[2]) && !grepl("install", args[2])) {
     # Change server port from 3000 to ...
     local_port <- switch(
-        as.character(as.numeric(args[2])),
-        "NA" = 3000,
-        as.numeric(args[2])
+      as.character(as.numeric(args[2])),
+      "NA" = 3000,
+      as.numeric(args[2])
     )
   }
 }
@@ -77,30 +77,30 @@ if (dir.exists("renv")) {
   renv::restore(library = local_lib, prompt = FALSE)
 
 } else if (dir.exists("packrat")) tryCatch(
-    withr::with_libpaths(local_lib, {
-      if (!grepl("local", args[2]))
-          try({
-            print("Packrat config detected!")
-            local_lib <- paste0("packrat/lib/", version$platform, "/", version$major, ".", version$minor)
-            if (!file.exists(".Rprofile")) packrat::init()
-            system(paste0("rm -rf ", local_lib, "/00LOCK-*"))
-            packrat::restore(overwrite.dirty = TRUE)
-          })
-    }),
-    error = function(e) {
+  withr::with_libpaths(local_lib, {
+    if (!grepl("local", args[2]))
+      try({
+        print("Packrat config detected!")
+        local_lib <- paste0("packrat/lib/", version$platform, "/", version$major, ".", version$minor)
+        if (!file.exists(".Rprofile")) packrat::init()
+        system(paste0("rm -rf ", local_lib, "/00LOCK-*"))
+        packrat::restore(overwrite.dirty = TRUE)
+      })
+  }),
+  error = function(e) {
 
-      install.packages("withr")
+    install.packages("withr")
 
-      # DEBUG
-      message(e)
+    # DEBUG
+    message(e)
 
-      print("Packrat config detected!")
-      local_lib <- paste0("packrat/lib/", version$platform, "/", version$major, ".", version$minor)
-      if (!file.exists(".Rprofile") && dir.exists("packrat")) packrat::init()
-      system(paste0("rm -rf ", local_lib, "/00LOCK-*"))
-      packrat::restore(overwrite.dirty = TRUE)
-    },
-    finally = print(paste0("Use lib: ", local_lib))
+    print("Packrat config detected!")
+    local_lib <- paste0("packrat/lib/", version$platform, "/", version$major, ".", version$minor)
+    if (!file.exists(".Rprofile") && dir.exists("packrat")) packrat::init()
+    system(paste0("rm -rf ", local_lib, "/00LOCK-*"))
+    packrat::restore(overwrite.dirty = TRUE)
+  },
+  finally = print(paste0("Use lib: ", local_lib))
 
 )
 
@@ -128,12 +128,12 @@ install_package_deps <- function () {
     }
 
     packages <- read.csv(
-        switch(
-            as.character(file.exists(paste0(appDir, "/package.csv"))),
-            "TRUE" = paste0(appDir, "/package.csv"),
-            "FALSE" = paste0(getwd(), "/package.csv")
-        ),
-        header = FALSE, sep = ",", as.is = TRUE, col.names = c("package", "path_version"))
+      switch(
+        as.character(file.exists(paste0(appDir, "/package.csv"))),
+        "TRUE" = paste0(appDir, "/package.csv"),
+        "FALSE" = paste0(getwd(), "/package.csv")
+      ),
+      header = FALSE, sep = ",", as.is = TRUE, col.names = c("package", "path_version"))
 
     for (p in rownames(packages)) {
       package_idx <- as.numeric(p)
@@ -145,16 +145,16 @@ install_package_deps <- function () {
           github_path <- trimws(packages$path_version[package_idx])
           if (!require(as.character(package[1]), character.only = TRUE)) {
             message(sprintf(
-                'devtools::install_github("%s", lib = "%s", upgrade = "never", auth_token = "%s")',
-                github_path, local_lib, auth_token))
+              'devtools::install_github("%s", lib = "%s", upgrade = "never", auth_token = "%s")',
+              github_path, local_lib, auth_token))
             devtools::install_github(github_path, lib = local_lib, upgrade = "never", auth_token = auth_token)
           }
         } else {
           version_string <- trimws(packages$path_version[package_idx])
           if (!require(as.character(package[1]), character.only = TRUE) || version_string != as.character(packageVersion(package[1]))) {
             message(sprintf(
-                'devtools::install_version("%s", lib = "%s", upgrade = "never", auth_token = "%s", version = "%s")',
-                package, local_lib, auth_token, version_string))
+              'devtools::install_version("%s", lib = "%s", upgrade = "never", auth_token = "%s", version = "%s")',
+              package, local_lib, auth_token, version_string))
             devtools::install_version(package, lib = local_lib, upgrade = "never", version = version_string)
           }
         }
@@ -177,406 +177,414 @@ install_package_deps <- function () {
 no_error <- FALSE
 
 while (!no_error) tryCatch(
-    withr::with_libpaths(local_lib, {
-
-      if (exists("args") && !is.null(args) && (grepl("install", args[1]) || grepl("install", args[2]))) {
-        if (!require("devtools") || !require("stringi") || !require("stringr")) {
-          install.packages(c("cli", "glue", "devtools", "stringr", "tidyverse", "usethis"), lib = local_lib)
-        }
-
-        no_error <- install_package_deps()
-
-        if (dir.exists("packrat") && !grepl("local", args[2])) {
-          if (!file.exists(".Rprofile")) packrat::init()
-          print("Before taking a new packrat snapshot, try to remove LOCK dirs: ")
-          system("mkdir -p del")
-          print(paste0("mv ", local_lib, "/00LOCK-* del/"))
-          system(paste0("mv ", local_lib, "/00LOCK-* del/"))
-          system("ls -l del/*")
-          print("rm -rf del")
-          system("rm -rf del")
-          packrat::snapshot(ignore.stale = TRUE)
-          print("Snapshot saved.")
-          print("Replace lib-R linked directory with actual libraries:")
-          print('for f in $(find packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/ -name "[A-Za-z]*"); do lib_path=$(ls -l $f | grep -oP "(\\/var\\/.+)"); if [ $lib_path ]; then rm $f && cp -ar $lib_path packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/; fi; done;')
-          system('for f in $(find packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/ -name "[A-Za-z]*"); do lib_path=$(ls -l $f | grep -oP "(\\/var\\/.+)"); if [ $lib_path ]; then rm $f && cp -ar $lib_path packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/; fi; done;')
-          print("Attempting bundle...")
-          packrat::bundle(file = "packrat.tar.gz")
-          if (file.exists("packrat.tar.gz")) {
-            print("Bundle saved.")
-          }
-        }
-
-        print("Installation finished.")
-
-      } else {
-
-        future_cluster <- future::makeClusterPSOCK(2) #future::availableCores())
-        parallelly::autoStopCluster(future_cluster)
-
-        for (cl_idx in seq_along(future_cluster)) {
-          parallel:::sendCall(future_cluster[[cl_idx]], fun = Sys.getpid, args = list())
-          cl_pid <- parallel:::recvResult(future_cluster[[cl_idx]])
-          attr(future_cluster[[cl_idx]]$host, "pid") <- cl_pid
-        }
-
-        future::plan(future::cluster, workers = future_cluster)
-
-        options(shiny.host = "0.0.0.0") # listen on all available network interfaces
-        options(shiny.port = shiny_port)
-        #options(shiny.launch.browser = .rs.invokeShinyWindowExternal)
-
-        print(paste0("Run Shiny app: ", appDir))
-        print(paste0("Use local dir: ", getwd()))
-        print(list.files(appDir))
-        print(paste0("Use local lib: ", local_lib))
-        print(.libPaths())
-
-        shiny_fallback_app <- shiny::shinyApp(
-            ui = function() { shiny::fluidPage(h1("This is a test app")) },
-            server = function(input, output, session) {}
-        )
-
-        if (grepl("/", appDir)) {
-
-          print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
-
-          # shiny::runApp(appDir, launch.browser = FALSE)
-          shiny_app_future <- future::future({
-            print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
-            shiny_app <- shiny::runApp(
-                app = if (file.exists(paste0(appDir, "/server.R"))) {
-                  print(paste0("With ", appDir, "/server.R: ", file.exists(paste0(appDir, "/server.R"))))
-                  appDir
-                } else if (file.exists(paste0(appDir, "/app.R"))) {
-                  print(paste0("With ", appDir, "/app.R: ", file.exists(paste0(appDir, "/app.R"))))
-                  appDir
-                } else {
-                  shiny_fallback_app
-                },
-                host = "0.0.0.0",
-                port = shiny_port,
-                launch.browser = FALSE
-            )
-
-            return(NULL)
-          })
-
-        } else {
-          print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
-
-          # # shiny::runApp(launch.browser = FALSE)
-          shiny_app_future <- future::future({
-            shiny_app <- shiny::runApp(
-                app = if (file.exists("server.R")) {
-                  print(paste0("With server.R: ", file.exists("server.R")))
-                  getwd()
-                } else if (file.exists("app.R")) {
-                  print(paste0("With app.R: ", file.exists("app.R")))
-                  getwd()
-                } else if (file.exists("src/app.R")) {
-                  setwd("src")
-                  print(paste0("With app.R: ", file.exists("app.R")))
-                  getwd()
-                } else {
-                  shiny_fallback_app
-                },
-                host = "0.0.0.0",
-                port = shiny_port,
-                launch.browser = FALSE
-            )
-
-            return(NULL)
-          })
-        }
-
-        # From https://gabrielcp.medium.com/going-real-time-in-r-plumber-with-websockets-93547c767412
-        PlumberWebSocket <- R6::R6Class(
-            "PlumberWebSocket",
-            inherit = plumber::Plumber,
-            public = list(
-                onWSOpen = function(ws) {
-                  if (is.function(private$ws_open)) {
-                    private$ws_open(ws)
-                  }
-                  invisible(self)
-                },
-                websocket = function(open = NULL) {
-                  if (!is.null(open)) stopifnot(is.function(open))
-                  private$ws_open <- open
-                }
-            ),
-            private = list(
-                ws_open = NULL
-            )
-        )
-
-        plumbr <- PlumberWebSocket$new()
-
-        plumbr$onWSOpen()
-
-        ws_clients <- list()
-
-        addWebSocketClient <- function(ws_client, message) {
-          ws_client$request$uuid <- UUIDgenerate()
-
-          print(ws_clients)
-
-          for(client in ws_clients) {
-            print(ws_clients)
-            print("\n")
-          }
-
-          print(ws_client$request$uuid %in% names(ws_clients))
-
-          if (!(ws_client$request$uuid %in% names(ws_clients))) {
-            ws_clients[[ws_client$request$uuid]] <<- ws_client #<<- modifies ws_clients globally
-
-            ws_client$onClose(function() {
-              removeWebSocketClient(ws_client$request$uuid)
-            })
-
-            ws_client$request$ws_shiny <- websocket::WebSocket$new(paste0("ws://127.0.0.1", ":", shiny_port, "/"))
-            ws_client$request$ws_shiny$connect()
-            ws_client$request$ws_shiny$onMessage(function(event) {
-              print("Relay Shiny server event message to websocket client...")
-              ws_client$send(event$data)
-              print(event)
-            })
-          }
-          return(ws_clients)
-        }
-
-        removeWebSocketClient <- function(uuid) {
-          ws_clients[[uuid]] <<- NULL
-        }
-
-        handleWebSocketEvent <- function(pr) {
-          pr$websocket(
-              function (ws_client) {
-                addWebSocketClient(ws_client)
-                print("New user connected!")
-
-                ws_client$onMessage(function(binary, message) {
-                  if ("ws_shiny" %in% names(ws_client$request)) {
-                    print("Relay websocket message to Shiny server...")
-                    Sys.sleep(1)
-                    ws_client$request$ws_shiny$send(as.character(message))
-                    print(message)
-                  }
-                })
-
-              }
-          )
-
-          pr
-        }
-
-        handleFileRequests <- function (req, res) {
-          cat(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, req$PATH_INFO, "\n"))
-
-          file_path <- stringr::str_replace_all(req$PATH_INFO, "/www", "")
-          cat(paste0(file_path, "\n"))
-
-          # httr_target <- httr::GET(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, file_path))
-          httr_target <- httr::GET(paste0("http://127.0.0.1:", shiny_port, file_path))
-          # httr_result <- httr::content(httr_target, as = "raw")
-          httr_result <- httr::content(httr_target, as = "text", encoding ="UTF-8")
-          # print(httr_result)
-
-          httr_result
-        }
-
-        plumbr %>%
-            handleWebSocketEvent %>%
-            plumber::pr_filter("globalFilter", function (req, res) {
-              cat(as.character(Sys.time()), "-",
-                  req$REQUEST_METHOD, req$PATH_INFO, "-",
-                  req$HTTP_USER_AGENT, "@", req$REMOTE_ADDR, "\n"
-              )
-
-              ## API && Swagger Filter ----
-              if (as.character(req$PATH_INFO) != "/" &&
-                  !grepl("/__api__", as.character(req$PATH_INFO)) &&
-                  !grepl("/__docs__", as.character(req$PATH_INFO)) &&
-                  !grepl("/openapi", as.character(req$PATH_INFO))
-              ) {
-                # Process file request as if it had the static file prefix ("www/")
-                req$PATH_INFO <- paste0("/www", as.character(req$PATH_INFO))
-              }   # else { Let default plumber handlers process API and/or Swagger __docs__ request }
-
-              ## CORS access
-              res$setHeader("Access-Control-Allow-Origin", "*")
-
-              if (req$REQUEST_METHOD == "OPTIONS") {
-                res$setHeader("Access-Control-Allow-Methods","*")
-                res$setHeader("Access-Control-Allow-Headers", req$HTTP_ACCESS_CONTROL_REQUEST_HEADERS)
-                res$status <- 200
-                return(list())
-              } else {
-                plumber::forward()
-              }
-            }) %>%
-            plumber::pr_mount("/__api__", pr("modules/plumber.R")) %>% # <- mount additional routes under "/__api__" %>%
-            (function (pr) {
-              ## Proxy routes to files served by Shiny app ----
-              pr %>%
-                  plumber::pr_handle(c("GET", "POST"), "/", function (req, res) {
-                    # "<html>
-                    #   <h1>Hello, World!</h1>
-                    # </html>"
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_html()) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<file>.svg", function (file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "image/svg+xml"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<file>", function (file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.css", function (path1, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "text/css"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.js", function (path1, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "application/javascript"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.svg", function (path1, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "image/svg+xml"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>", function (path1, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.css", function (path1, path2, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "text/css"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.js", function (path1, path2, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "application/javascript"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>", function (path1, path2, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.css", function (path1, path2, path3, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "text/css"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.js", function (path1, path2, path3, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }, serializer = plumber::serializer_text(
-                      serialize_fn = as.character,
-                      type = "application/javascript"
-                  )) %>%
-                  plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>", function (path1, path2, path3, file, req, res) {
-
-                    handleFileRequests(req, res)
-
-                  }) %>%
-                  plumber::pr_static("/www/", "www/")
-
-              # return(pr)
-
-            })() %>%
-            plumber::pr_hook("exit", function(){
-              print("Stop the future cluster (bg workers)...")
-              try({
-                tryCatch(
-                {
-                  future_host <- shiny_app_future$workers[[shiny_app_future$node]]$host
-                  print(future_host)
-                  pid <- attr(future_host, "pid")
-                  print(pid)
-                  tools::pskill(pid)
-                },
-                    finally = function () {
-                      parallel::stopCluster(future_cluster)
-                    }
-                )
-              })
-
-              print("Done!")
-            }) %>%
-            plumber::pr_run(
-                host = "0.0.0.0",
-                port = local_port
-            )
-
+  withr::with_libpaths(local_lib, {
+
+    if (exists("args") && !is.null(args) && (grepl("install", args[1]) || grepl("install", args[2]))) {
+      if (!require("devtools") || !require("stringi") || !require("stringr")) {
+        install.packages(c("cli", "glue", "devtools", "stringr", "tidyverse", "usethis"), lib = local_lib)
       }
 
-      no_error <- TRUE
+      no_error <- install_package_deps()
 
-    }),
-    error = function(e) {
+      if (dir.exists("packrat") && !grepl("local", args[2])) {
+        if (!file.exists(".Rprofile")) packrat::init()
+        print("Before taking a new packrat snapshot, try to remove LOCK dirs: ")
+        system("mkdir -p del")
+        print(paste0("mv ", local_lib, "/00LOCK-* del/"))
+        system(paste0("mv ", local_lib, "/00LOCK-* del/"))
+        system("ls -l del/*")
+        print("rm -rf del")
+        system("rm -rf del")
+        packrat::snapshot(ignore.stale = TRUE)
+        print("Snapshot saved.")
+        print("Replace lib-R linked directory with actual libraries:")
+        print('for f in $(find packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/ -name "[A-Za-z]*"); do lib_path=$(ls -l $f | grep -oP "(\\/var\\/.+)"); if [ $lib_path ]; then rm $f && cp -ar $lib_path packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/; fi; done;')
+        system('for f in $(find packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/ -name "[A-Za-z]*"); do lib_path=$(ls -l $f | grep -oP "(\\/var\\/.+)"); if [ $lib_path ]; then rm $f && cp -ar $lib_path packrat/lib-R/x86_64-pc-linux-gnu/3.5.1/; fi; done;')
+        print("Attempting bundle...")
+        packrat::bundle(file = "packrat.tar.gz")
+        if (file.exists("packrat.tar.gz")) {
+          print("Bundle saved.")
+        }
+      }
 
-      # DEBUG
-      message(e)
+      print("Installation finished.")
 
-      #if (!no_error) {
-      if (!is.null(e) && !is.na(e$message) && grepl("package", e$message))
-          withr::with_libpaths(local_lib, {
+    } else {
 
-            print(sprintf("ERROR: %s", e$message))
+      future_cluster <- future::makeClusterPSOCK(future::availableCores()) # 2)
+      parallelly::autoStopCluster(future_cluster)
 
-            str_pattern <- paste0("(?:package\\scalled|namespace) ['|‘]([\\w]+)")
-            package_match <- stringr::str_match(e$message, str_pattern)[,2]
-            print(paste0("Missing package match: ", package_match))
+      for (cl_idx in seq_along(future_cluster)) {
+        parallel:::sendCall(future_cluster[[cl_idx]], fun = Sys.getpid, args = list())
+        cl_pid <- parallel:::recvResult(future_cluster[[cl_idx]])
+        attr(future_cluster[[cl_idx]]$host, "pid") <- cl_pid
+      }
 
-            if (!is.null(package_match) && !is.na(package_match) && !require(package_match[1], character.only = TRUE)) {
-              if (dir.exists(paste0(local_lib, "/", package_match))) {
-                if (!require("devtools") || !require("stringi") || !require("stringr")) {
-                  install.packages(c("cli", "glue", "devtools", "stringr", "tidyverse", "usethis"))
-                }
-                devtools::install_deps(paste0(local_lib, "/", package_match), lib = local_lib, upgrade = "never", dependencies = TRUE)
-              }
-              install.packages(package_match, lib = local_lib)
+      future::plan(future::cluster, workers = future_cluster)
+
+      options(shiny.host = "0.0.0.0") # listen on all available network interfaces
+      options(shiny.port = shiny_port)
+      #options(shiny.launch.browser = .rs.invokeShinyWindowExternal)
+
+      print(paste0("Run Shiny app: ", appDir))
+      print(paste0("Use local dir: ", getwd()))
+      print(list.files(appDir))
+      print(paste0("Use local lib: ", local_lib))
+      print(.libPaths())
+
+      shiny_fallback_app <- shiny::shinyApp(
+        ui = function() { shiny::fluidPage(h1("This is a test app")) },
+        server = function(input, output, session) {}
+      )
+
+      if (grepl("/", appDir)) {
+
+        print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
+
+        # shiny::runApp(appDir, launch.browser = FALSE)
+        shiny_app_future <- future::future({
+          print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
+          shiny_app <- shiny::runApp(
+            app = if (file.exists(paste0(appDir, "/server.R"))) {
+              print(paste0("With ", appDir, "/server.R: ", file.exists(paste0(appDir, "/server.R"))))
+              appDir
+            } else if (file.exists(paste0(appDir, "/app.R"))) {
+              print(paste0("With ", appDir, "/app.R: ", file.exists(paste0(appDir, "/app.R"))))
+              appDir
+            } else {
+              shiny_fallback_app
+            },
+            host = "0.0.0.0",
+            port = shiny_port,
+            launch.browser = FALSE
+          )
+
+          return(NULL)
+        })
+
+      } else {
+        print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
+
+        # # shiny::runApp(launch.browser = FALSE)
+        shiny_app_future <- future::future({
+          shiny_app <- shiny::runApp(
+            app = if (file.exists("server.R")) {
+              print(paste0("With server.R: ", file.exists("server.R")))
+              getwd()
+            } else if (file.exists("app.R")) {
+              print(paste0("With app.R: ", file.exists("app.R")))
+              getwd()
+            } else if (file.exists("src/app.R")) {
+              setwd("src")
+              print(paste0("With app.R: ", file.exists("app.R")))
+              getwd()
+            } else {
+              shiny_fallback_app
+            },
+            host = "0.0.0.0",
+            port = shiny_port,
+            launch.browser = FALSE
+          )
+
+          return(NULL)
+        })
+      }
+
+      # From https://gabrielcp.medium.com/going-real-time-in-r-plumber-with-websockets-93547c767412
+      PlumberWebSocket <- R6::R6Class(
+        "PlumberWebSocket",
+        inherit = plumber::Plumber,
+        public = list(
+          onWSOpen = function(ws) {
+            if (is.function(private$ws_open)) {
+              private$ws_open(ws)
             }
+            invisible(self)
+          },
+          websocket = function(open = NULL) {
+            if (!is.null(open)) stopifnot(is.function(open))
+            private$ws_open <- open
+          }
+        ),
+        private = list(
+          ws_open = NULL
+        )
+      )
 
-            install_package_deps()
+      plumbr <- PlumberWebSocket$new()
 
+      plumbr$onWSOpen()
+
+      ws_clients <- list()
+
+      addWebSocketClient <- function(ws_client, message) {
+        ws_client$request$uuid <- UUIDgenerate()
+
+        print(ws_clients)
+
+        for(client in ws_clients) {
+          print(ws_clients)
+          print("\n")
+        }
+
+        print(ws_client$request$uuid %in% names(ws_clients))
+
+        if (!(ws_client$request$uuid %in% names(ws_clients))) {
+          ws_clients[[ws_client$request$uuid]] <<- ws_client #<<- modifies ws_clients globally
+
+          ws_client$onClose(function() {
+            removeWebSocketClient(ws_client$request$uuid)
           })
-      else quit(save = "no", status = 1, runLast = FALSE)
 
-    },
-    finally = "Shiny app terminated."
+          ws_client$request$ws_shiny <- websocket::WebSocket$new(paste0("ws://127.0.0.1", ":", shiny_port, "/"))
+          ws_client$request$ws_shiny$connect()
+          ws_client$request$ws_shiny$onMessage(function(event) {
+            print("Relay Shiny server event message to websocket client...")
+            ws_client$send(event$data)
+            print(event)
+          })
+        }
+        return(ws_clients)
+      }
+
+      removeWebSocketClient <- function(uuid) {
+        ws_clients[[uuid]] <<- NULL
+      }
+
+      handleWebSocketEvent <- function(pr) {
+        pr$websocket(
+          function (ws_client) {
+            addWebSocketClient(ws_client)
+            print("New user connected!")
+
+            ws_client$onMessage(function(binary, message) {
+              if ("ws_shiny" %in% names(ws_client$request)) {
+                print("Relay websocket message to Shiny server...")
+                Sys.sleep(1)
+                ws_client$request$ws_shiny$send(as.character(message))
+                print(message)
+              }
+            })
+
+          }
+        )
+
+        pr
+      }
+
+      handleFileRequests <- function (req, res) {
+        cat(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, req$PATH_INFO, "\n"))
+
+        file_path <- stringr::str_replace_all(req$PATH_INFO, "/www", "")
+        cat(paste0(file_path, "\n"))
+
+        # httr_target <- httr::GET(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, file_path))
+        httr_target <- httr::GET(paste0("http://127.0.0.1:", shiny_port, file_path))
+        # httr_result <- httr::content(httr_target, as = "raw")
+        httr_result <- httr::content(httr_target, as = "text", encoding ="UTF-8")
+        # print(httr_result)
+
+        httr_result
+      }
+
+      plumbr %>%
+        handleWebSocketEvent %>%
+        plumber::pr_filter("globalFilter", function (req, res) {
+          cat(as.character(Sys.time()), "-",
+              req$REQUEST_METHOD, req$PATH_INFO, "-",
+              req$HTTP_USER_AGENT, "@", req$REMOTE_ADDR, "\n"
+          )
+
+          ## API && Swagger Filter ----
+          if (as.character(req$PATH_INFO) != "/" &&
+            !grepl("/__api__", as.character(req$PATH_INFO)) &&
+            !grepl("/__docs__", as.character(req$PATH_INFO)) &&
+            !grepl("/openapi", as.character(req$PATH_INFO))
+          ) {
+            # Process file request as if it had the static file prefix ("www/")
+            req$PATH_INFO <- paste0("/www", as.character(req$PATH_INFO))
+          }   # else { Let default plumber handlers process API and/or Swagger __docs__ request }
+
+          ## CORS access
+          res$setHeader("Access-Control-Allow-Origin", "*")
+
+          if (req$REQUEST_METHOD == "OPTIONS") {
+            res$setHeader("Access-Control-Allow-Methods","*")
+            res$setHeader("Access-Control-Allow-Headers", req$HTTP_ACCESS_CONTROL_REQUEST_HEADERS)
+            res$status <- 200
+            return(list())
+          } else {
+            plumber::forward()
+          }
+        }) %>%
+        plumber::pr_mount("/__api__", pr("modules/plumber.R")) %>% # <- mount additional routes under "/__api__" %>%
+        (function (pr) {
+          ## Proxy routes to files served by Shiny app ----
+          pr %>%
+            plumber::pr_handle(c("GET", "POST"), "/", function (req, res) {
+              # "<html>
+              #   <h1>Hello, World!</h1>
+              # </html>"
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_html()) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<file>.js", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            ))  %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<file>.svg", function (file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "image/svg+xml"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<file>", function (file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.css", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "text/css"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.js", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.svg", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "image/svg+xml"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.css", function (path1, path2, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "text/css"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.js", function (path1, path2, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>", function (path1, path2, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.css", function (path1, path2, path3, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "text/css"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.js", function (path1, path2, path3, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>", function (path1, path2, path3, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_static("/www/", "www/")
+
+          # return(pr)
+
+        })() %>%
+        plumber::pr_hook("exit", function(){
+          print("Stop the future cluster (bg workers)...")
+          try({
+            tryCatch(
+            {
+              future_host <- shiny_app_future$workers[[shiny_app_future$node]]$host
+              print(future_host)
+              pid <- attr(future_host, "pid")
+              print(pid)
+              tools::pskill(pid)
+            },
+              finally = function () {
+                parallel::stopCluster(future_cluster)
+              }
+            )
+          })
+
+          print("Done!")
+        }) %>%
+        plumber::pr_run(
+          host = "0.0.0.0",
+          port = local_port
+        )
+
+    }
+
+    no_error <- TRUE
+
+  }),
+  error = function(e) {
+
+    # DEBUG
+    message(e)
+
+    #if (!no_error) {
+    if (!is.null(e) && !is.na(e$message) && grepl("package", e$message))
+      withr::with_libpaths(local_lib, {
+
+        print(sprintf("ERROR: %s", e$message))
+
+        str_pattern <- paste0("(?:package\\scalled|namespace) ['|‘]([\\w]+)")
+        package_match <- stringr::str_match(e$message, str_pattern)[,2]
+        print(paste0("Missing package match: ", package_match))
+
+        if (!is.null(package_match) && !is.na(package_match) && !require(package_match[1], character.only = TRUE)) {
+          if (dir.exists(paste0(local_lib, "/", package_match))) {
+            if (!require("devtools") || !require("stringi") || !require("stringr")) {
+              install.packages(c("cli", "glue", "devtools", "stringr", "tidyverse", "usethis"))
+            }
+            devtools::install_deps(paste0(local_lib, "/", package_match), lib = local_lib, upgrade = "never", dependencies = TRUE)
+          }
+          install.packages(package_match, lib = local_lib)
+        }
+
+        install_package_deps()
+
+      })
+    else quit(save = "no", status = 1, runLast = FALSE)
+
+  },
+  finally = "Shiny app terminated."
 )
