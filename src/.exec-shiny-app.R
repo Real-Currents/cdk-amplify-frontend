@@ -212,16 +212,16 @@ while (!no_error) tryCatch(
 
     } else {
 
-      # future_cluster <- future::makeClusterPSOCK(future::availableCores()) # 2)
-      # parallelly::autoStopCluster(future_cluster)
-      #
-      # for (cl_idx in seq_along(future_cluster)) {
-      #   parallel:::sendCall(future_cluster[[cl_idx]], fun = Sys.getpid, args = list())
-      #   cl_pid <- parallel:::recvResult(future_cluster[[cl_idx]])
-      #   attr(future_cluster[[cl_idx]]$host, "pid") <- cl_pid
-      # }
-      #
-      # future::plan(future::cluster, workers = future_cluster)
+      future_cluster <- future::makeClusterPSOCK(future::availableCores()) # 2)
+      parallelly::autoStopCluster(future_cluster)
+
+      for (cl_idx in seq_along(future_cluster)) {
+        parallel:::sendCall(future_cluster[[cl_idx]], fun = Sys.getpid, args = list())
+        cl_pid <- parallel:::recvResult(future_cluster[[cl_idx]])
+        attr(future_cluster[[cl_idx]]$host, "pid") <- cl_pid
+      }
+
+      future::plan(future::cluster, workers = future_cluster)
 
       options(shiny.host = "0.0.0.0") # listen on all available network interfaces
       options(shiny.port = shiny_port)
@@ -242,8 +242,8 @@ while (!no_error) tryCatch(
 
         print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
 
-        # # shiny::runApp(appDir, launch.browser = FALSE)
-        # shiny_app_future <- future::future({
+        # shiny::runApp(appDir, launch.browser = FALSE)
+        shiny_app_future <- future::future({
           shiny_app <- shiny::runApp(
             app = if (file.exists(paste0(appDir, "/server.R"))) {
               print(paste0("With ", appDir, "/server.R: ", file.exists(paste0(appDir, "/server.R"))))
@@ -258,15 +258,15 @@ while (!no_error) tryCatch(
             port = shiny_port,
             launch.browser = FALSE
           )
-        #
-        #   return(NULL)
-        # })
+
+          return(NULL)
+        })
 
       } else {
         print(paste0("Launching Shiny app (http://127.0.0.1:", shiny_port, ") in future worker cluster..."))
 
-        # # shiny::runApp(launch.browser = FALSE)
-        # shiny_app_future <- future::future({
+        # shiny::runApp(launch.browser = FALSE)
+        shiny_app_future <- future::future({
           shiny_app <- shiny::runApp(
             app = if (file.exists("server.R")) {
               print(paste0("With server.R: ", file.exists("server.R")))
@@ -285,270 +285,270 @@ while (!no_error) tryCatch(
             port = shiny_port,
             launch.browser = FALSE
           )
-        #
-        #   return(NULL)
-        # })
+
+          return(NULL)
+        })
       }
 
-      # # From https://gabrielcp.medium.com/going-real-time-in-r-plumber-with-websockets-93547c767412
-      # PlumberWebSocket <- R6::R6Class(
-      #   "PlumberWebSocket",
-      #   inherit = plumber::Plumber,
-      #   public = list(
-      #     onWSOpen = function(ws) {
-      #       if (is.function(private$ws_open)) {
-      #         private$ws_open(ws)
-      #       }
-      #       invisible(self)
-      #     },
-      #     websocket = function(open = NULL) {
-      #       if (!is.null(open)) stopifnot(is.function(open))
-      #       private$ws_open <- open
-      #     }
-      #   ),
-      #   private = list(
-      #     ws_open = NULL
-      #   )
-      # )
-      #
-      # plumbr <- PlumberWebSocket$new()
-      #
-      # plumbr$onWSOpen()
-      #
-      # ws_clients <- list()
-      #
-      # addWebSocketClient <- function(ws_client, message) {
-      #   ws_client$request$uuid <- UUIDgenerate()
-      #
-      #   print(ws_clients)
-      #
-      #   for(client in ws_clients) {
-      #     print(ws_clients)
-      #     print("\n")
-      #   }
-      #
-      #   print(ws_client$request$uuid %in% names(ws_clients))
-      #
-      #   if (!(ws_client$request$uuid %in% names(ws_clients))) {
-      #     ws_clients[[ws_client$request$uuid]] <<- ws_client #<<- modifies ws_clients globally
-      #
-      #     ws_client$onClose(function() {
-      #       removeWebSocketClient(ws_client$request$uuid)
-      #     })
-      #
-      #     ws_client$request$ws_shiny <- websocket::WebSocket$new(paste0("ws://127.0.0.1", ":", shiny_port, "/"))
-      #     ws_client$request$ws_shiny$connect()
-      #     ws_client$request$ws_shiny$onMessage(function(event) {
-      #       print("Relay Shiny server event message to websocket client...")
-      #       ws_client$send(event$data)
-      #       print(event)
-      #     })
-      #   }
-      #   return(ws_clients)
-      # }
-      #
-      # removeWebSocketClient <- function(uuid) {
-      #   ws_clients[[uuid]] <<- NULL
-      # }
-      #
-      # handleWebSocketEvent <- function(pr) {
-      #   pr$websocket(
-      #     function (ws_client) {
-      #       addWebSocketClient(ws_client)
-      #       print("New user connected!")
-      #
-      #       ws_client$onMessage(function(binary, message) {
-      #         if ("ws_shiny" %in% names(ws_client$request)) {
-      #           print("Relay websocket message to Shiny server...")
-      #           Sys.sleep(1)
-      #           ws_client$request$ws_shiny$send(as.character(message))
-      #           print(message)
-      #         }
-      #       })
-      #
-      #     }
-      #   )
-      #
-      #   pr
-      # }
-      #
-      # handleFileRequests <- function (req, res) {
-      #   cat(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, req$PATH_INFO, "\n"))
-      #
-      #   file_path <- stringr::str_replace_all(req$PATH_INFO, "/www", "")
-      #   cat(paste0(file_path, "\n"))
-      #
-      #   # httr_target <- httr::GET(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, file_path))
-      #   httr_target <- httr::GET(paste0("http://127.0.0.1:", shiny_port, file_path))
-      #   # httr_result <- httr::content(httr_target, as = "raw")
-      #   httr_result <- httr::content(httr_target, as = "text", encoding ="UTF-8")
-      #   # print(httr_result)
-      #
-      #   httr_result
-      # }
-      #
-      # plumbr %>%
-      #   handleWebSocketEvent %>%
-      #   plumber::pr_filter("globalFilter", function (req, res) {
-      #     cat(as.character(Sys.time()), "-",
-      #         req$REQUEST_METHOD, req$PATH_INFO, "-",
-      #         req$HTTP_USER_AGENT, "@", req$REMOTE_ADDR, "\n"
-      #     )
-      #
-      #     ## API && Swagger Filter ----
-      #     if (as.character(req$PATH_INFO) != "/" &&
-      #       !grepl("/__api__", as.character(req$PATH_INFO)) &&
-      #       !grepl("/__docs__", as.character(req$PATH_INFO)) &&
-      #       !grepl("/openapi", as.character(req$PATH_INFO))
-      #     ) {
-      #       # Process file request as if it had the static file prefix ("www/")
-      #       req$PATH_INFO <- paste0("/www", as.character(req$PATH_INFO))
-      #     }   # else { Let default plumber handlers process API and/or Swagger __docs__ request }
-      #
-      #     ## CORS access
-      #     res$setHeader("Access-Control-Allow-Origin", "*")
-      #
-      #     if (req$REQUEST_METHOD == "OPTIONS") {
-      #       res$setHeader("Access-Control-Allow-Methods","*")
-      #       res$setHeader("Access-Control-Allow-Headers", req$HTTP_ACCESS_CONTROL_REQUEST_HEADERS)
-      #       res$status <- 200
-      #       return(list())
-      #     } else {
-      #       plumber::forward()
-      #     }
-      #   }) %>%
-      #   plumber::pr_mount("/__api__", pr("modules/plumber.R")) %>% # <- mount additional routes under "/__api__" %>%
-      #   (function (pr) {
-      #     ## Proxy routes to files served by Shiny app ----
-      #     pr %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/", function (req, res) {
-      #         # "<html>
-      #         #   <h1>Hello, World!</h1>
-      #         # </html>"
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_html()) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<file>.js", function (path1, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "application/javascript"
-      #       ))  %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<file>.svg", function (file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "image/svg+xml"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<file>", function (file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.css", function (path1, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "text/css"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.js", function (path1, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "application/javascript"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.svg", function (path1, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "image/svg+xml"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>", function (path1, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.css", function (path1, path2, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "text/css"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.js", function (path1, path2, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "application/javascript"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>", function (path1, path2, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.css", function (path1, path2, path3, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "text/css"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.js", function (path1, path2, path3, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }, serializer = plumber::serializer_text(
-      #         serialize_fn = as.character,
-      #         type = "application/javascript"
-      #       )) %>%
-      #       plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>", function (path1, path2, path3, file, req, res) {
-      #
-      #         handleFileRequests(req, res)
-      #
-      #       }) %>%
-      #       plumber::pr_static("/www/", "www/")
-      #
-      #     # return(pr)
-      #
-      #   })() %>%
-      #   plumber::pr_hook("exit", function(){
-      #     print("Stop the future cluster (bg workers)...")
-      #     try({
-      #       tryCatch(
-      #       {
-      #         future_host <- shiny_app_future$workers[[shiny_app_future$node]]$host
-      #         print(future_host)
-      #         pid <- attr(future_host, "pid")
-      #         print(pid)
-      #         tools::pskill(pid)
-      #       },
-      #         finally = function () {
-      #           parallel::stopCluster(future_cluster)
-      #         }
-      #       )
-      #     })
-      #
-      #     print("Done!")
-      #   }) %>%
-      #   plumber::pr_run(
-      #     host = "0.0.0.0",
-      #     port = local_port
-      #   )
+      # From https://gabrielcp.medium.com/going-real-time-in-r-plumber-with-websockets-93547c767412
+      PlumberWebSocket <- R6::R6Class(
+        "PlumberWebSocket",
+        inherit = plumber::Plumber,
+        public = list(
+          onWSOpen = function(ws) {
+            if (is.function(private$ws_open)) {
+              private$ws_open(ws)
+            }
+            invisible(self)
+          },
+          websocket = function(open = NULL) {
+            if (!is.null(open)) stopifnot(is.function(open))
+            private$ws_open <- open
+          }
+        ),
+        private = list(
+          ws_open = NULL
+        )
+      )
+
+      plumbr <- PlumberWebSocket$new()
+
+      plumbr$onWSOpen()
+
+      ws_clients <- list()
+
+      addWebSocketClient <- function(ws_client, message) {
+        ws_client$request$uuid <- UUIDgenerate()
+
+        print(ws_clients)
+
+        for(client in ws_clients) {
+          print(ws_clients)
+          print("\n")
+        }
+
+        print(ws_client$request$uuid %in% names(ws_clients))
+
+        if (!(ws_client$request$uuid %in% names(ws_clients))) {
+          ws_clients[[ws_client$request$uuid]] <<- ws_client #<<- modifies ws_clients globally
+
+          ws_client$onClose(function() {
+            removeWebSocketClient(ws_client$request$uuid)
+          })
+
+          ws_client$request$ws_shiny <- websocket::WebSocket$new(paste0("ws://127.0.0.1", ":", shiny_port, "/"))
+          ws_client$request$ws_shiny$connect()
+          ws_client$request$ws_shiny$onMessage(function(event) {
+            print("Relay Shiny server event message to websocket client...")
+            ws_client$send(event$data)
+            print(event)
+          })
+        }
+        return(ws_clients)
+      }
+
+      removeWebSocketClient <- function(uuid) {
+        ws_clients[[uuid]] <<- NULL
+      }
+
+      handleWebSocketEvent <- function(pr) {
+        pr$websocket(
+          function (ws_client) {
+            addWebSocketClient(ws_client)
+            print("New user connected!")
+
+            ws_client$onMessage(function(binary, message) {
+              if ("ws_shiny" %in% names(ws_client$request)) {
+                print("Relay websocket message to Shiny server...")
+                Sys.sleep(1)
+                ws_client$request$ws_shiny$send(as.character(message))
+                print(message)
+              }
+            })
+
+          }
+        )
+
+        pr
+      }
+
+      handleFileRequests <- function (req, res) {
+        cat(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, req$PATH_INFO, "\n"))
+
+        file_path <- stringr::str_replace_all(req$PATH_INFO, "/www", "")
+        cat(paste0(file_path, "\n"))
+
+        # httr_target <- httr::GET(paste0("http://", req$REMOTE_ADDR, ":", shiny_port, file_path))
+        httr_target <- httr::GET(paste0("http://127.0.0.1:", shiny_port, file_path))
+        # httr_result <- httr::content(httr_target, as = "raw")
+        httr_result <- httr::content(httr_target, as = "text", encoding ="UTF-8")
+        # print(httr_result)
+
+        httr_result
+      }
+
+      plumbr %>%
+        handleWebSocketEvent %>%
+        plumber::pr_filter("globalFilter", function (req, res) {
+          cat(as.character(Sys.time()), "-",
+              req$REQUEST_METHOD, req$PATH_INFO, "-",
+              req$HTTP_USER_AGENT, "@", req$REMOTE_ADDR, "\n"
+          )
+
+          ## API && Swagger Filter ----
+          if (as.character(req$PATH_INFO) != "/" &&
+            !grepl("/__api__", as.character(req$PATH_INFO)) &&
+            !grepl("/__docs__", as.character(req$PATH_INFO)) &&
+            !grepl("/openapi", as.character(req$PATH_INFO))
+          ) {
+            # Process file request as if it had the static file prefix ("www/")
+            req$PATH_INFO <- paste0("/www", as.character(req$PATH_INFO))
+          }   # else { Let default plumber handlers process API and/or Swagger __docs__ request }
+
+          ## CORS access
+          res$setHeader("Access-Control-Allow-Origin", "*")
+
+          if (req$REQUEST_METHOD == "OPTIONS") {
+            res$setHeader("Access-Control-Allow-Methods","*")
+            res$setHeader("Access-Control-Allow-Headers", req$HTTP_ACCESS_CONTROL_REQUEST_HEADERS)
+            res$status <- 200
+            return(list())
+          } else {
+            plumber::forward()
+          }
+        }) %>%
+        plumber::pr_mount("/__api__", pr("modules/plumber.R")) %>% # <- mount additional routes under "/__api__" %>%
+        (function (pr) {
+          ## Proxy routes to files served by Shiny app ----
+          pr %>%
+            plumber::pr_handle(c("GET", "POST"), "/", function (req, res) {
+              # "<html>
+              #   <h1>Hello, World!</h1>
+              # </html>"
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_html()) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<file>.js", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            ))  %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<file>.svg", function (file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "image/svg+xml"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<file>", function (file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.css", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "text/css"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.js", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>.svg", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "image/svg+xml"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<file>", function (path1, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.css", function (path1, path2, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "text/css"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>.js", function (path1, path2, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<file>", function (path1, path2, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.css", function (path1, path2, path3, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "text/css"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>.js", function (path1, path2, path3, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }, serializer = plumber::serializer_text(
+              serialize_fn = as.character,
+              type = "application/javascript"
+            )) %>%
+            plumber::pr_handle(c("GET", "POST"), "/www/<path1>/<path2>/<path3>/<file>", function (path1, path2, path3, file, req, res) {
+
+              handleFileRequests(req, res)
+
+            }) %>%
+            plumber::pr_static("/www/", "www/")
+
+          # return(pr)
+
+        })() %>%
+        plumber::pr_hook("exit", function(){
+          print("Stop the future cluster (bg workers)...")
+          try({
+            tryCatch(
+            {
+              future_host <- shiny_app_future$workers[[shiny_app_future$node]]$host
+              print(future_host)
+              pid <- attr(future_host, "pid")
+              print(pid)
+              tools::pskill(pid)
+            },
+              finally = function () {
+                parallel::stopCluster(future_cluster)
+              }
+            )
+          })
+
+          print("Done!")
+        }) %>%
+        plumber::pr_run(
+          host = "0.0.0.0",
+          port = local_port
+        )
 
     }
 

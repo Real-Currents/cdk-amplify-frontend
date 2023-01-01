@@ -49,8 +49,13 @@ class Header extends Component {
 }
 
 function App ({ content }) {
+    const [credentials, setCredentials] = useState({
+        "access_token": "",
+        "token_type": "",
+        "expires_in": 0,
+        "refresh_token": null
+    });
     const [count, setCount] = useState(0);
-    let content_loaded = false;
     const [state, setState] = useState({
         rawdata: [
             {
@@ -65,6 +70,8 @@ function App ({ content }) {
     const [windowHeight, setHeight] = useState(0);
     const [windowRatio, setRatio] = useState(0);
     const [selectedAlbumTitle, setSelectedAlbumTitle] = useState("");
+
+    let content_loaded = false;
 
     (function init () {
         // Check access to react/vite environment variables
@@ -112,15 +119,23 @@ function App ({ content }) {
 
             getOutput("updateQueryString");
 
+            getOutput('credentials', (data) => {
+                console.log("Get input from shiny");
+                console.log('credentials');
+                console.log(data);
+                for (const n in data) {
+                    if (data.hasOwnProperty(n)) {
+                        console.log(data[n]);
+                    }
+                }
+                setCredentials(data);
+            });
+
             getOutput('album_title', (data) => {
                 console.log("Get input from shiny");
                 console.log('album_title')
                 console.log(data);
-                for (const n in data) {
-                    if (data.hasOwnProperty(n)) {
-                        setState(data[n]);
-                    }
-                }
+                setSelectedAlbumTitle(data);
             });
         }
     }

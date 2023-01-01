@@ -1,20 +1,10 @@
-library(httr)
-library(jsonlite)
-library(dplyr)
-library(glue)
-library(shiny)
-library(shinyjs)
-
-library(googleAuthR)
-
-oauth_client_id <- Sys.getenv("OAUTH_CLIENT_ID")
-oauth_client_secret <- Sys.getenv("OAUTH_CLIENT_SECRET")
-
-options("googleAuthR.scopes.selected" = c(
-  "https://www.googleapis.com/auth/photoslibrary",
-  "https://www.googleapis.com/auth/photoslibrary.sharing",
-  "https://www.googleapis.com/auth/urlshortener"
-))
+# oauth_client_id <- Sys.getenv("OAUTH_CLIENT_ID")
+# oauth_client_secret <- Sys.getenv("OAUTH_CLIENT_SECRET")
+# options("googleAuthR.scopes.selected" = c(
+#   "https://www.googleapis.com/auth/photoslibrary",
+#   "https://www.googleapis.com/auth/photoslibrary.sharing",
+#   "https://www.googleapis.com/auth/urlshortener"
+# ))
 
 fileSearch <- function(query) {
   googleAuthR::gar_api_generator("https://www.googleapis.com/drive/v3/files/",
@@ -131,8 +121,9 @@ googlePhotoMutator <- function (input, output, session, googleUserData, album_ti
           data.frame()
 
       if (nrow(getalbum) > 0) {
-        session$sendCustomMessage(type = 'credentials',
-                                  message = session$userData[["credentials"]])
+        session$sendCustomMessage(
+          type = 'credentials',
+          message = session$userData[["credentials"]])
       }
 
       shiny::req(input$query)
