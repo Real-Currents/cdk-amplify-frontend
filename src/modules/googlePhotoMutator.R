@@ -3,6 +3,7 @@ library(jsonlite)
 library(dplyr)
 library(glue)
 library(shiny)
+library(shinyjs)
 
 library(googleAuthR)
 
@@ -67,20 +68,37 @@ googlePhotoMutator <- function (input, output, session, googleUserData, album_ti
   googleUserCredentials <- if ("code" %in% names(url_query)){
     url_code <- url_query$code
     if (!(url_code %in% names(shiny::isolate(shiny::reactiveValuesToList(googleUserData))))) {
-      k <- gar_shiny_auth(session)
-      if (!is.null(k)) {
-        credentials <- get("credentials", envir = k)
+      tryCatch(
+        {
+          k <- gar_shiny_auth(session)
+          if (!is.null(k)) {
+            credentials <- get("credentials", envir = k)
 
-        session$userData[["credentials"]] <- credentials
+            session$userData[["credentials"]] <- credentials
 
-        googleUserData[[url_code]] <- session$userData
-        googleUserData[[url_code]] <<- session$userData #<<- modifies ws_clients globally
+            googleUserData[[url_code]] <- session$userData
+            googleUserData[[url_code]] <<- session$userData #<<- modifies ws_clients globally
 
-        message("Updated userData credentials: ")
-        message(as.character(session$userData[["credentials"]]))
+            message("Updated userData credentials: ")
+            message(as.character(session$userData[["credentials"]]))
 
-        session$userData[["credentials"]]
-      }
+            session$userData[["credentials"]]
+          }
+        },
+        error =  function (e) {
+
+          # # DEBUG
+          # message(e)
+
+          #if (!no_error) {
+          if (!is.null(e) && !is.na(e$message) && grepl("invalid_grantBad", e$message)) {
+            ## reset $url_search
+            updateQueryString("", mode = c("replace"), session = session)
+            shinyjs::js$resetPage("")
+          }
+        },
+        finally = "Attempted to get authorization with old code."
+      )
     } else {
 
       session$userData[["credentials"]] <- get(
@@ -100,31 +118,48 @@ googlePhotoMutator <- function (input, output, session, googleUserData, album_ti
 
   output$gdrive <- shiny::renderTable({
 
-    authorization = paste('Bearer ', session$userData[["credentials"]]$access_token)
+    result <- if(!is.null(session$userData[["credentials"]])) {
+      authorization = paste('Bearer ', session$userData[["credentials"]]$access_token)
 
-    getalbum <-
-      GET(glue("https://photoslibrary.googleapis.com/v1/albums"),
-          add_headers(
-            'Authorization' = authorization,
-            'Accept'  = 'application/json')) %>%
-        content(., as = "text", encoding = "UTF-8") %>%
-        fromJSON(., flatten = TRUE) %>%
-        data.frame()
+      getalbum <-
+        GET(glue("https://photoslibrary.googleapis.com/v1/albums"),
+            add_headers(
+              'Authorization' = authorization,
+              'Accept'  = 'application/json')) %>%
+          content(., as = "text", encoding = "UTF-8") %>%
+          fromJSON(., flatten = TRUE) %>%
+          data.frame()
 
-    shiny::req(input$query)
+      if (nrow(getalbum) > 0) {
+        session$sendCustomMessage(type = 'credentials',
+                                  message = session$userData[["credentials"]])
+      }
 
-    # no need for with_shiny()
-    # fileSearch(input$query)
+      shiny::req(input$query)
 
-    # result <- data.frame(c(mode = "test"))
-    result <- getalbum %>%
-      dplyr::filter(
-        # `albums.title` == album_title
-        `albums.title` == input$query
+      # no need for with_shiny()
+      # fileSearch(input$query)
+
+      session$sendCustomMessage(
+        type = 'album_title',
+        message = (
+          getalbum %>%
+            dplyr::filter(
+              # `albums.title` == album_title
+              `albums.title` == input$query
+            )
+        )$albums.title
       )
 
-    session$sendCustomMessage(type = 'album_title',
-                              message = result$albums.title)
+      # data.frame(c(mode = "test"))
+      getalbum %>%
+        dplyr::filter(
+          # `albums.title` == album_title
+          `albums.title` == input$query
+        )
+    } else {
+      data.frame(c(mode = "test"))
+    }
 
     return(result)
 

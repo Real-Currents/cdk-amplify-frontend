@@ -1,14 +1,30 @@
-source("include.R")
+source("modules/include.R")
 
 options(`show.error.messages` = TRUE)
 options(`usethis.protocol` = "ssh")
 
-# ## include()... an easy, RStudio re-loadable, way to dynamically
-# ## load Shiny modules (unlike R.utils::sourceDirectory())
-# include("modules/library.R")
-# include("modules/global.R")
+## include()... an easy, RStudio re-loadable, way to dynamically
+## load Shiny modules (unlike R.utils::sourceDirectory())
+include("modules/library.R")
+include("modules/global.R")
 
 library(googleAuthR)
+
+options(`googleAuthR.scopes.selected` = c(
+  "https://www.googleapis.com/auth/urlshortener"
+))
+
+print(options("googleAuthR.scopes.selected"))
+
+# options(`googleAuthR.scopes.selected` = c(
+#   as.character(
+#     options("googleAuthR.scopes.selected")
+#   ),
+#   "https://www.googleapis.com/auth/photoslibrary",
+#   "https://www.googleapis.com/auth/photoslibrary.sharing"
+# ))
+
+print(options("googleAuthR.scopes.selected"))
 
 ## Google Photos library API requires oauth2.0 authentication of the following two scopes.
 #
@@ -18,13 +34,16 @@ gar_set_client(
   "data/azure-active-directory-345018-ead4206dfb9f.json",
   "data/client_secret_1094116453446-95d6n1eea7mc7cv0aiqbqll3bghr0adg.apps.googleusercontent.com.json",
   scopes = c(
+    as.character(
+      options("googleAuthR.scopes.selected")
+    ),
     "https://www.googleapis.com/auth/photoslibrary",
     "https://www.googleapis.com/auth/photoslibrary.sharing"
   ),
   activate = c("web")
 )
 
-googleUserData <- reactiveValues()
+googleUserData <- shiny::reactiveValues()
 
 ui_run <- shiny::reactiveVal(1)
 
@@ -86,6 +105,8 @@ fileSearch <- function(query) {
 #   ui_i()
 # })()
 
+
+
 # shiny::runApp(
 #   ## gar_shiny_ui() needs to wrap the ui you have created above.
 #   app =
@@ -130,6 +151,6 @@ fileSearch <- function(query) {
   )
 #   ,
 #   host = "0.0.0.0",
-#   port = 1221,
+#   port = as.numeric("1221"),
 #   launch.browser = FALSE
 # )

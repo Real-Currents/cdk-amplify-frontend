@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { getOutput } from "./modules/ShinyHelper.mjs";
 
 const root_id = 'react-app';
 const root_container = document.getElementById(root_id);
@@ -32,8 +33,10 @@ const root_init = (evt) => {
     root_container.style.opacity = "1.0";
 };
 
+
 if (typeof Shiny === 'object') {
     document.body.addEventListener('cori.apps:init', root_init);
+
 } else {
     document.body.childNodes.forEach(n => ("data" in n && n.data.match(/headContent/) !== null) ? document.body.removeChild(n) : true);
     root_init({ preventDefault: () => {} })

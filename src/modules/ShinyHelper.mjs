@@ -13,12 +13,17 @@ export function checkShinyStatus () {
 }
 
 export function getOutput (output, callback) {
+    console.log(`Set up listener for Shiny output ("${output}")`);
+
     if (!!checkShinyStatus()) try {
+        window.shiny = Shiny;
         Shiny.addCustomMessageHandler(output, callback || function(data) {
             console.log(`Shiny output ("${output}"):`, data);
         });
     } finally {
         return true;
+    } else {
+        console.log("Shiny event handling is not available.")
     }
 
     return false;

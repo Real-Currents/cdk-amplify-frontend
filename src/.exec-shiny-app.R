@@ -555,7 +555,7 @@ while (!no_error) tryCatch(
     no_error <- TRUE
 
   }),
-  error = function(e) {
+  error = function (e) {
 
     # DEBUG
     message(e)

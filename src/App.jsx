@@ -110,6 +110,8 @@ function App ({ content }) {
             }, 53, app_container);
             content_loaded = true;
 
+            getOutput("updateQueryString");
+
             getOutput('album_title', (data) => {
                 console.log("Get input from shiny");
                 console.log('album_title')
