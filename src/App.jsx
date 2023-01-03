@@ -120,7 +120,6 @@ function App ({ content }) {
             getOutput("updateQueryString");
 
             getOutput('credentials', (data) => {
-                console.log("Get input from shiny");
                 console.log('credentials');
                 console.log(data);
                 for (const n in data) {
@@ -132,10 +131,14 @@ function App ({ content }) {
             });
 
             getOutput('album_title', (data) => {
-                console.log("Get input from shiny");
                 console.log('album_title')
                 console.log(data);
                 setSelectedAlbumTitle(data);
+            });
+
+            getOutput('album_media', (data) => {
+                console.log('album_media')
+                console.log(data);
             });
         }
     }

@@ -8,7 +8,7 @@ ui <- function (ui_run) {
     gar_shiny_ui(
       htmlTemplate(
         "templates/index.html",
-        google_login = (function () {
+        google_auth = (function () {
             ui_run_update <- shiny::isolate(ui_run()) + 1
             ui_run(ui_run_update)
 
@@ -21,6 +21,7 @@ ui <- function (ui_run) {
               shiny::textInput("query",
                                label = "Google Photo query",
                                value = "Our Dear One Dawna"),
+              shiny::uiOutput("selectedAlbum"),
               shiny::tableOutput("gdrive"),
               class = "display-inline-block restrain-width text-align-center"
             )

@@ -20,6 +20,15 @@ export function getOutput (output, callback) {
         Shiny.addCustomMessageHandler(output, callback || function(data) {
             console.log(`Shiny output ("${output}"):`, data);
         });
+
+        // Some versions of Shiny server use "custom" as the message
+        // channel and use the value of the `type` param in
+        // session$sendCustomMessage() as the first key of data...
+        Shiny.addCustomMessageHandler("custom", callback || function(data) {
+            if (data.hasOwnProperty(output)) {
+                console.log(`Shiny custom output ("${output}"):`, data);
+            }
+        });
     } finally {
         return true;
     } else {

@@ -31,9 +31,9 @@ googleUserData <- shiny::reactiveValues()
 
 ui_run <- shiny::reactiveVal(0)
 
-# shiny::runApp(
-#   app =
-# # Create Shiny app ----
+shiny::runApp(
+  app =
+## Create Shiny app ----
     shiny::shinyApp(
 
     # Define function that *calls* ui ----
@@ -43,22 +43,21 @@ ui_run <- shiny::reactiveVal(0)
     })(),
     server = function (input, output, session) {
 
+      # message(paste0(getwd(), "/www"))
+      #
+      # shiny::addResourcePath("/www", paste0(getwd(), "/www"))
+
       # R.utils::sourceDirectory("modules", local = TRUE)
       ## Instead of ^ R.utils::sourceDirectory(), we use include()...
       ## If called within server/ui function, path to module file
       ## must be relative to dir in which app.R is executing ...
-      include("modules/googlePhotoMutator.R")
-      googlePhotoMutator(input, output, session, googleUserData,
-                         album_title = "Our Dear One Dawna",
-                         album_url = "https://photos.google.com/lr/album/AOTYMnnzEQKgqfLLyGUMr-BkGgfoCBfMfjLgzurJp09sXg7NT1-kS8Eiw-4AEProM2NAkNnGwAEG"
-      )
 
       include("modules/server.R")
       server(input, output, session)
     }
   )
-#   ,
-#   host = "0.0.0.0",
-#   port = as.numeric("1221"),
-#   launch.browser = FALSE
-# )
+  ,
+  host = "0.0.0.0",
+  port = as.numeric("1221"),
+  launch.browser = FALSE
+)
