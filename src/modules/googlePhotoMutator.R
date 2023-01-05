@@ -262,8 +262,10 @@ googlePhotoMutator <- function (input, output, session, googleUserData, album_ti
 
       cat(toJSON(unlist(media_objects)))
 
-      write_json(list("objects" = unlist(media_objects)), path = "www/media/media_objects.json")
+      ## Store media uri's as relative links
+      write_json(list("objects" = stringr::str_replace_all(unlist(media_objects)), "/www/", ""), path = "www/media/media_objects.json")
 
+      ## Create a slideshow widget based on https://www.publicalbum.org/blog/embedding-google-photos-albums
       tagList(div(HTML(paste0('
 <script src="https://cdn.jsdelivr.net/npm/publicalbum@latest/embed-ui.min.js" async></script>
 <div class="pa-gallery-player-widget" style="width:100%%; height:480px; display:none;"

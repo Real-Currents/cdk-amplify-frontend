@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -22,33 +22,33 @@
 
 
         if (typeof Shiny === 'object') {
-          console.log("ShinyJS is loaded");
+            console.log("ShinyJS is loaded");
 
-          $(document).on('shiny:connected', function(evt) {
-              console.log("ShinyJS is connected to the server");
-          });
+            $(document).on('shiny:connected', function(evt) {
+                console.log("ShinyJS is connected to the server");
+            });
 
-          $(document).on("shiny:sessioninitialized", (evt) => {
-            console.log(evt);
+            $(document).on("shiny:sessioninitialized", (evt) => {
+                console.log(evt);
 
-            const render_trigger = Object.create(evt);
-            render_trigger.target = document.body;
-            render_trigger.target.data = {
-              action: "render",
-              path: ('target' in evt && 'hash' in evt.target ) ?
-                      evt.target.hash :
-                      ""
-            };
-            setTimeout(render_trigger.target.dispatchEvent(new CustomEvent("cori.apps:init", render_trigger)), 53);
-          });
+                const render_trigger = Object.create(evt);
+                render_trigger.target = document.body;
+                render_trigger.target.data = {
+                    action: "render",
+                    path: ('target' in evt && 'hash' in evt.target ) ?
+                        evt.target.hash :
+                        ""
+                };
+                setTimeout(render_trigger.target.dispatchEvent(new CustomEvent("cori.apps:init", render_trigger)), 53);
+            });
         }
     </script>
-  </head>
-  <body>
-    <div id="react-app" style="transition: opacity ease-in 1500ms;">
-        {{ google_auth }}
-    </div>
+</head>
+<body>
+<div id="react-app" style="transition: opacity ease-in 1500ms;">
+    {{ google_auth }}
+</div>
 
-    <script src="/src/main.jsx" type="module"></script>
-  </body>
+<script src="/src/main.jsx" type="module"></script>
+</body>
 </html>
