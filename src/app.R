@@ -27,12 +27,10 @@ gar_set_client(
   activate = c("web")
 )
 
-googleUserData <- shiny::reactiveValues()
-
 ui_run <- shiny::reactiveVal(0)
 
-shiny::runApp(
-  app =
+# shiny::runApp(
+#   app =
 ## Create Shiny app ----
     shiny::shinyApp(
 
@@ -56,8 +54,8 @@ shiny::runApp(
       server(input, output, session)
     }
   )
-  ,
-  host = "0.0.0.0",
-  port = as.numeric("1221"),
-  launch.browser = FALSE
-)
+#   ,
+#   host = "0.0.0.0",
+#   port = as.numeric("1221"),
+#   launch.browser = FALSE
+# )
